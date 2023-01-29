@@ -1,0 +1,241 @@
+<!doctype html>
+<title>Đồ án môn học</title>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+  
+<meta name="viewport" content="width = device-width, initial-scale = 1">
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+<link rel="stylesheet" href="{{url_for('static', filename='cropper.css')}}">
+</head>
+<body>
+
+<div class="page-header">
+    <h2 class="display-4" style="text-align:center">DEMO PROJECT 01</h2>
+	<h4 class="display-4" style="text-align:center">MÔN HỌC: TÌM KIẾM THÔNG TIN THỊ GIÁC</h4>
+    <p class="lead" style="text-align:center">Họ Tên: Đặng Hoài Thương - Mã số: 210101022</p>
+</div>
+
+<div class="tab-content">
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-sm-4">
+				<div id="upload" class="tab-pane fade in active">
+					<h5>Chọn bộ ảnh tìm kiếm (OxBuild hay Paris):</h5>
+					<select id="imgsets" name="imgsets" form="imgsetsform">
+						<option value="oxbuild">OxBuild</option>
+						<option value="paris">Paris</option>
+					</select>
+					<h5>Chọn và upload ảnh truy vấn:</h5>
+					<input type="file" id="imagUpload">
+
+					
+				</div>
+			</div>
+			<div class="col-sm-8">
+				<!--<img src='{{filename}}' height="250px"/>-->
+				<div class="row">
+					<div class="col col-5">
+						<h5>Ảnh gốc</h5>
+					</div>
+					<div class="col col-2">&nbsp;
+					</div>
+					<div class="col col-5">
+						<h5>Ảnh đã cắt</h5>
+					</div>
+				</div>
+				<div class="row" height="300px">
+					<div class="col col-5">
+					  <img id="image_preview" height="200px" src="">
+					</div>
+					<div class="col col-2">&nbsp;
+					</div>
+					<div class="col col-5">
+					  <div class="preview" style="max-height: 200px; min-height: 200px;">
+					  </div>
+					  <div>&nbsp;</div>
+					  <div>
+						<!-- <form method=POST enctype=multipart/form-data action="{{ url_for('imageRetrieval') }}" id="imgsetsform"> -->
+							<input type="hidden" name="blobimg" id="blobimg"/>
+							<input type="button" value="Truy vấn" onclick="submitImage()">
+						<!-- </form> -->
+					  </div>
+					</div>
+				</div>	
+			</div>
+		</div>
+		<div class="row">
+			<div class="container-fluid" id="container-result">
+				
+			</div>
+		</div>
+	</div>
+	
+</div>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../static/cropper.js"></script>
+<script>
+    function each(arr, callback) {
+      var length = arr.length;
+      var i;
+
+      for (i = 0; i < length; i++) {
+        callback.call(arr, arr[i], i, arr);
+      }
+
+      return arr;
+    }
+
+	function previewImg() {
+		var image = document.querySelector('#image_preview');
+		var previews = document.querySelectorAll('.preview');
+		var previewReady = false;
+		var cropper = new Cropper(image, {
+          ready: function () {
+            var clone = this.cloneNode();
+
+            clone.className = '';
+			
+            clone.style.cssText = (
+              'display: block;' +
+              'width: 100%;' +
+              'min-width: 0;' +
+              'min-height: 0;' +
+              'max-width: none;' +
+              'max-height: none;'
+            );
+
+            each(previews, function (elem) {
+              elem.appendChild(clone.cloneNode());
+            });
+            previewReady = true;
+          },
+
+          crop: function (event) {
+            if (!previewReady) {
+              return;
+            }
+
+            var data = event.detail;
+            var cropper = this.cropper;
+            var imageData = cropper.getImageData();
+            var previewAspectRatio = data.height / data.width;
+
+            each(previews, function (elem) {
+              var previewImage = elem.getElementsByTagName('img').item(0);
+              var previewHeight = elem.offsetHeight;
+              var previewWidth = previewHeight / previewAspectRatio;
+              var imageScaledRatio = data.height / previewHeight;
+
+              elem.style.width = previewWidth + 'px';
+              previewImage.style.width = imageData.naturalWidth / imageScaledRatio + 'px';
+              previewImage.style.height = imageData.naturalHeight / imageScaledRatio + 'px';
+              previewImage.style.marginLeft = -data.x / imageScaledRatio + 'px';
+              previewImage.style.marginTop = -data.y / imageScaledRatio + 'px';
+			  previewImage.id = "image_preview_0";
+            });
+          },
+        });
+    }
+	
+    window.addEventListener('DOMContentLoaded', previewImg);
+
+	$(document).ready(function(){
+		$("#imagUpload").change(function(e){
+			var previews = document.querySelectorAll('.preview');
+			each(previews, function (elem) {
+				while (elem.firstChild) {
+              		elem.removeChild(elem.firstChild);
+				}
+            });
+			var element = document.getElementById("image_preview");
+			var parentNode = element.parentNode;
+			parentNode.innerHTML = '';
+
+			var img = e.target.files[0];
+			var img_link = URL.createObjectURL(img);
+			var img_tag = document.createElement("img");
+			img_tag.src = img_link;
+			img_tag.id = "image_preview";
+			img_tag.style.height = "200px";
+			parentNode.appendChild(img_tag);
+
+			previewImg();
+		});
+	});
+	function submitImage() {
+		prepare_crop_img();
+		var blobimg = document.getElementById("blobimg");
+		var blobimgval = blobimg.getAttribute("value");
+		var select = document.getElementById("imgsets");
+		$.post('/', {
+			imgsets: select.value,
+			blobimg: blobimgval
+		}).done(function(response) {
+			
+			var evaluated = response['evaluated'];
+			var score = response['score'];
+			
+			var textResult = "<h4>Kết quả:</h4>";
+			for(i=0; i<10; i++ ) {
+				textResult += 
+				'<div class="col-sm-3" style="text-align: center;"> \
+					<a href="" class="thumbnail" style="border-color:#c7ffbe;"> \
+						<img src="' + evaluated[i] + '" />\
+						<h5>' + score[i] + '%</h5>\
+					</a>\
+				</div>';
+			}
+			var divResult = document.getElementById("container-result");
+			divResult.innerHTML = textResult;
+
+		}).fail(function() {
+			alert('Error: Could not contact server.');
+		});
+	}
+
+	function prepare_crop_img() {
+		var img = document.getElementById("image_preview")		
+		var natural_width = img.naturalWidth;
+		var natural_height = img.naturalHeight;
+		console.log(natural_width)
+		console.log(natural_height)
+
+		var canvas = document.getElementsByClassName("cropper-canvas")[0];
+		var orgininal_width = parseFloat(canvas.style.width);
+		var orgininal_height = parseFloat(canvas.style.height);
+		console.log(orgininal_width)
+		console.log(orgininal_height)
+
+		var cropbox = document.getElementsByClassName("cropper-crop-box")[0];
+		var cropbox_width = parseFloat(cropbox.style.width);
+		var cropbox_height = parseFloat(cropbox.style.height);
+		
+		const style = window.getComputedStyle(cropbox)
+    	const matrix = new DOMMatrixReadOnly(style.transform)
+		var cropbox_x = matrix.m41;
+		var cropbox_y = matrix.m42;
+		console.log(cropbox_width)
+		console.log(cropbox_height)
+		console.log(cropbox_x)
+		console.log(cropbox_y)
+
+		var canvas = document.createElement("canvas");
+		canvas.width = cropbox_width * natural_width / orgininal_width;
+		canvas.height = cropbox_height * natural_height / orgininal_height;
+		var context = canvas.getContext("2d");
+		context.drawImage(img, 
+			cropbox_x * natural_width / orgininal_width, 
+			cropbox_y * natural_height / orgininal_height, 
+			cropbox_width * natural_width / orgininal_width, 
+			cropbox_height * natural_height / orgininal_height, 
+			0, 0, canvas.width, canvas.height); 
+		var dataurl = canvas.toDataURL('image/jpeg', 0.5);
+		console.log(dataurl);
+		document.getElementById("blobimg").setAttribute("value", dataurl);
+	}
+  </script>
+</body>
+</html>
